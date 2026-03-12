@@ -1,0 +1,167 @@
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upload-label {
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.upload-area {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  border: 3px dashed #ccc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fafafa;
+  overflow: hidden;
+}
+
+.upload-area:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.upload-area.dragging {
+  border-color: #667eea;
+  background: #e8eeff;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+}
+
+.upload-area.has-preview {
+  border-style: solid;
+  border-color: #667eea;
+}
+
+.upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.upload-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+  opacity: 0.6;
+}
+
+.upload-text {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.preview-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.upload-area:hover .preview-overlay {
+  opacity: 1;
+}
+
+.file-name {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.btn-change,
+.btn-clear {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 0.9rem;
+}
+
+.btn-change {
+  background: #667eea;
+  color: white;
+}
+
+.btn-change:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-clear {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid white;
+}
+
+.btn-clear:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.file-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .upload-area {
+    min-height: 150px;
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+  }
+
+  .upload-text {
+    font-size: 0.95rem;
+  }
+
+  .upload-hint {
+    font-size: 0.75rem;
+  }
+}

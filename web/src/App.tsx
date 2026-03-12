@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSessionStore } from './store/session-store';
 import ImageUploader from './components/ImageUploader';
+import ImageUpload from './components/ImageUpload';
 import ProgressPanel from './components/ProgressPanel';
 import ResultViewer from './components/ResultViewer';
 import { STLTest } from './components/STLTest';
@@ -8,40 +9,73 @@ import './App.css';
 
 function App() {
   const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [description, setDescription] = useState('');
   const [showTest, setShowTest] = useState(false);
   const { isProcessing, progress, currentMessage, reset } = useSessionStore();
+
+  const handleImageSelect = (file: File, imageUrl: string) => {
+    setImageFile(file);
+    setImageUrl(imageUrl);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!imageUrl) {
-      alert('请输入图片 URL');
+      alert('请选择或输入图片');
       return;
     }
 
     try {
-      const response = await fetch('/api/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageUrl,
-          description: description || '未提供描述',
-          targetSize: { width: 100, height: 80, depth: 60 },
-        }),
-      });
+      const payload: any = {
+        imageUrl,
+        description: description || '未提供描述',
+        targetSize: { width: 100, height: 80, depth: 60 },
+      };
 
-      const data = await response.json();
-      
-      if (data.success) {
-        console.log('Session created:', data.data.sessionId);
-        // 连接 WebSocket 监听进度
-        useSessionStore.getState().connectSocket(data.data.sessionId);
-        useSessionStore.getState().setSessionId(data.data.sessionId);
-        useSessionStore.getState().setImageUrl(imageUrl);
-        useSessionStore.getState().setStatus('analyzing');
+      // 如果有本地文件，使用 FormData 上传
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        formData.append('description', payload.description);
+        formData.append('targetSize', JSON.stringify(payload.targetSize));
+
+        const response = await fetch('/api/session', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log('Session created:', data.data.sessionId);
+          useSessionStore.getState().connectSocket(data.data.sessionId);
+          useSessionStore.getState().setSessionId(data.data.sessionId);
+          useSessionStore.getState().setImageUrl(imageUrl);
+          useSessionStore.getState().setStatus('analyzing');
+        } else {
+          alert('创建会话失败：' + (data.error?.message || '未知错误'));
+        }
       } else {
-        alert('创建会话失败：' + (data.error?.message || '未知错误'));
+        // 使用 JSON 方式提交 URL
+        const response = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log('Session created:', data.data.sessionId);
+          useSessionStore.getState().connectSocket(data.data.sessionId);
+          useSessionStore.getState().setSessionId(data.data.sessionId);
+          useSessionStore.getState().setImageUrl(imageUrl);
+          useSessionStore.getState().setStatus('analyzing');
+        } else {
+          alert('创建会话失败：' + (data.error?.message || '未知错误'));
+        }
       }
     } catch (error) {
       console.error('Submit failed:', error);
@@ -84,6 +118,15 @@ function App() {
         <section className="input-section">
           <h2>📸 上传图片</h2>
           <form onSubmit={handleSubmit} className="input-form">
+            <ImageUpload 
+              onImageSelect={handleImageSelect}
+              disabled={isProcessing}
+            />
+
+            <div className="form-divider">
+              <span>或</span>
+            </div>
+
             <div className="form-group">
               <label htmlFor="imageUrl">图片 URL</label>
               <input
@@ -92,20 +135,7 @@ function App() {
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://example.com/image.jpg"
-                disabled={isProcessing}
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="description">描述（可选）</label>
-              <input
-                id="description"
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="例如：一个可爱的小猫"
-                disabled={isProcessing}
+                disabled={isProcessing || !!imageFile}
               />
             </div>
 

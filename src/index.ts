@@ -10,6 +10,7 @@ import cors from 'cors';
 import pino from 'pino';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import multer from 'multer';
 import config from './config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -81,12 +82,27 @@ async function main() {
   // API 路由
   app.post('/api/session', async (req, res) => {
     try {
-      const { imageUrl, description, targetSize } = req.body;
+      let imageUrl: string;
+      let description: string;
+      let targetSize: any;
+
+      // 处理文件上传或 JSON 数据
+      if (req.file) {
+        // 从 FormData 上传
+        imageUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+        description = req.body.description || '未提供描述';
+        targetSize = JSON.parse(req.body.targetSize || '{}');
+      } else {
+        // 从 JSON 上传
+        imageUrl = req.body.imageUrl;
+        description = req.body.description || '未提供描述';
+        targetSize = req.body.targetSize;
+      }
       
       if (!imageUrl) {
         return res.status(400).json({
           success: false,
-          error: { code: 'MISSING_IMAGE', message: '缺少图片 URL' },
+          error: { code: 'MISSING_IMAGE', message: '缺少图片' },
         });
       }
 
