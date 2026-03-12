@@ -4,8 +4,9 @@
  */
 
 import { BaseAgent } from './base.js';
-import { AgentContext, VisualAnalysis } from '../types/index.js';
+import { AgentContext, VisualAnalysis, VisualFeature, ColorDistribution } from '../types/index.js';
 import { ToolExecutor } from '../tools/registry.js';
+import { getQwenVLService } from '../services/qwen-vl.js';
 
 export class VisionAgent extends BaseAgent {
   id = 'vision_agent';
@@ -51,48 +52,24 @@ export class VisionAgent extends BaseAgent {
     this.logger.info('Starting vision analysis', { imageUrl, description });
 
     try {
-      // Step 1: 调用图像分析工具
-      const imageAnalysis = await this.callTool('analyze_image', { imageUrl }, context.sessionId);
-      this.logger.info('Image analysis completed', imageAnalysis);
-
-      // Step 2: 估算尺寸
-      const dimensions = await this.callTool(
-        'estimate_dimensions',
-        { imageAnalysis, reference: 'common object' },
-        context.sessionId
+      // Step 1: 调用 Qwen-VL API 进行真实图片分析
+      const qwenService = getQwenVLService();
+      await this.sendProgress(context, '调用 Qwen-VL 分析中...', 20);
+      
+      const apiResponse = await qwenService.analyzeImage(
+        imageUrl,
+        description ? `请分析这个${description}，重点关注结构特征和尺寸` : undefined
       );
-      this.logger.info('Dimensions estimated', dimensions);
+      
+      this.logger.info('Qwen-VL response received', { 
+        confidence: apiResponse.confidence,
+        description: apiResponse.description 
+      });
 
-      // Step 3: 提取特征
-      const features = await this.callTool(
-        'extract_features',
-        { imageAnalysis },
-        context.sessionId
-      );
-      this.logger.info('Features extracted', features);
+      // Step 2: 解析 API 响应并整合结果
+      const result = this.parseApiResponse(apiResponse, description, targetSize);
 
-      // Step 4: 整合结果
-      const result: VisualAnalysis = {
-        objectType: description || 'unknown object',
-        category: this.categorizeObject(description || ''),
-        confidence: 0.8,
-        dimensions: {
-          estimated: targetSize || dimensions || { width: 100, height: 100, depth: 100 },
-          scale: 1,
-        },
-        structure: {
-          symmetry: 'none',
-          layers: 1,
-          hasOverhangs: false,
-          hasHollowParts: false,
-          complexity: 'medium',
-        },
-        features: features || [],
-        colors: [],
-        notes: ['分析结果待完善'],
-      };
-
-      await this.sendProgress(context, '视觉分析完成', 25);
+      await this.sendProgress(context, `视觉分析完成 - 识别：${result.objectType}`, 25);
       this.logger.info('Vision analysis completed', result);
 
       return result;
@@ -100,6 +77,77 @@ export class VisionAgent extends BaseAgent {
       this.logger.error('Vision analysis failed', error);
       throw error;
     }
+  }
+
+  /**
+   * 解析 Qwen-VL API 响应
+   */
+  private parseApiResponse(
+    response: any,
+    userDescription?: string,
+    targetSize?: any
+  ): VisualAnalysis {
+    // 尝试从响应中提取结构化数据
+    const content = response.content || '';
+    
+    // 简单的 JSON 提取
+    let parsedData: any = {};
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsedData = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      this.logger.info('No JSON in response, using fallback parsing');
+    }
+
+    const objectType = parsedData.objectType || userDescription || response.description || 'unknown object';
+    const category = parsedData.category || this.categorizeObject(objectType);
+    
+    // 解析特征列表
+    const features: VisualFeature[] = (parsedData.features || []).map((f: any) => ({
+      name: f.name || '特征',
+      description: f.description || '',
+      position: f.position || 'center',
+      size: f.size || 'medium',
+    }));
+
+    // 解析颜色分布
+    const colors: ColorDistribution[] = (parsedData.colors || []).map((c: any) => ({
+      name: c.name || '颜色',
+      hexCode: c.hexCode || '#CCCCCC',
+      coverage: c.coverage || 0.1,
+    }));
+
+    // 构建结构信息
+    const structure = parsedData.structure || {
+      symmetry: 'none',
+      layers: 1,
+      hasOverhangs: false,
+      hasHollowParts: false,
+      complexity: 'medium',
+    };
+
+    // 尺寸信息
+    const dimensions = parsedData.dimensions || {
+      width: 100,
+      height: 100,
+      depth: 100,
+    };
+
+    return {
+      objectType,
+      category,
+      confidence: parsedData.confidence || response.confidence || 0.7,
+      dimensions: {
+        estimated: targetSize || dimensions,
+        scale: 1,
+      },
+      structure,
+      features,
+      colors,
+      notes: parsedData.notes || ['基于 Qwen-VL 分析结果'],
+    };
   }
 
   private categorizeObject(description: string): VisualAnalysis['category'] {

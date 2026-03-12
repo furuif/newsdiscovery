@@ -323,8 +323,18 @@ export function createVisionTools(): ToolDefinition[] {
   ];
 }
 
-// 积木设计工具（stub，后续实现）
+// 积木设计工具
 export function createBrickDesignTools(): ToolDefinition[] {
+  // 延迟导入以避免循环依赖
+  let partsDb: any = null;
+  
+  const getPartsDb = () => {
+    if (!partsDb) {
+      partsDb = require('../data/bloks-parts.js').getPartsDatabase();
+    }
+    return partsDb;
+  };
+  
   return [
     {
       name: 'search_parts',
@@ -338,8 +348,8 @@ export function createBrickDesignTools(): ToolDefinition[] {
       },
       returns: { type: 'array' },
       handler: async (params: any) => {
-        // TODO: 查询零件数据库
-        return [];
+        const db = getPartsDb();
+        return db.searchParts(params.query || {});
       },
     },
     {
@@ -354,7 +364,8 @@ export function createBrickDesignTools(): ToolDefinition[] {
       },
       returns: { type: 'object' },
       handler: async (params: any) => {
-        return null;
+        const db = getPartsDb();
+        return db.getPartById(params.partId);
       },
     },
     {
