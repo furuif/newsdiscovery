@@ -3,11 +3,13 @@ import { useSessionStore } from './store/session-store';
 import ImageUploader from './components/ImageUploader';
 import ProgressPanel from './components/ProgressPanel';
 import ResultViewer from './components/ResultViewer';
+import { STLTest } from './components/STLTest';
 import './App.css';
 
 function App() {
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
+  const [showTest, setShowTest] = useState(false);
   const { isProcessing, progress, currentMessage, reset } = useSessionStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,9 +60,27 @@ function App() {
       <header className="app-header">
         <h1>🤖 NewsDiscovery</h1>
         <p className="subtitle">AI 驱动的图片到积木建模系统</p>
+        <button
+          onClick={() => setShowTest(!showTest)}
+          style={{
+            marginTop: '15px',
+            padding: '8px 16px',
+            background: 'rgba(255,255,255,0.2)',
+            color: 'white',
+            border: '1px solid white',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+          }}
+        >
+          {showTest ? '🏠 返回主页' : '🧪 STL 测试'}
+        </button>
       </header>
 
       <main className="app-main">
+        {showTest ? (
+          <STLTest />
+        ) : (
         <section className="input-section">
           <h2>📸 上传图片</h2>
           <form onSubmit={handleSubmit} className="input-form">
@@ -118,6 +138,7 @@ function App() {
         )}
 
         <ImageUploader imageUrl={imageUrl} />
+        )}
       </main>
 
       <footer className="app-footer">

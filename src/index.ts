@@ -141,6 +141,16 @@ async function main() {
     });
   });
 
+  // 文件下载 API
+  app.get('/api/session/:sessionId/download/:fileId', (req, res) => {
+    const { sessionId, fileId } = req.params;
+    // TODO: 从存储中获取文件
+    res.status(501).json({
+      success: false,
+      error: { code: 'NOT_IMPLEMENTED', message: '文件下载待实现' },
+    });
+  });
+
   // 前端路由（生产环境）
   if (config.NODE_ENV === 'production') {
     app.get('*', (req, res) => {

@@ -1,11 +1,45 @@
 import { useSessionStore } from '../store/session-store';
 import { STLViewer } from './STLViewer';
+import { useState } from 'react';
 import './ResultViewer.css';
 
 function ResultViewer() {
   const { result } = useSessionStore();
+  const [stlData, setStlData] = useState<ArrayBuffer | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (!result) return null;
+
+  const handleDownload = async (file: any) => {
+    try {
+      const response = await fetch(file.path);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `model_${Date.now()}.${file.format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('下载失败：' + (error instanceof Error ? error.message : '未知错误'));
+    }
+  };
+
+  const handleLoadSTL = async (file: any) => {
+    try {
+      setLoading(true);
+      const response = await fetch(file.path);
+      const arrayBuffer = await response.arrayBuffer();
+      setStlData(arrayBuffer);
+    } catch (error) {
+      console.error('STL load failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="result-viewer">
@@ -56,11 +90,39 @@ function ResultViewer() {
           <h3>🎨 3D 预览</h3>
           <div className="stl-viewer-container">
             {result.files?.[0]?.path ? (
-              <STLViewer modelPath={result.files[0].path} />
+              <>
+                <STLViewer modelData={stlData || undefined} />
+                {!stlData && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 10,
+                  }}>
+                    <button 
+                      onClick={() => handleLoadSTL(result.files[0])}
+                      disabled={loading}
+                      style={{
+                        padding: '10px 20px',
+                        background: 'rgba(102, 126, 234, 0.9)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {loading ? '加载中...' : '加载 STL 模型'}
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="placeholder-3d">
                 <p>3D 模型预览</p>
-                <p className="placeholder-note">需要后端提供 STL 文件</p>
+                <p className="placeholder-note">STL 文件加载中...</p>
               </div>
             )}
           </div>
@@ -76,7 +138,10 @@ function ResultViewer() {
                   <span className="file-name">{file.format.toUpperCase()} 文件</span>
                   <span className="file-size">{(file.size / 1024).toFixed(2)} KB</span>
                 </div>
-                <button className="btn-download">
+                <button 
+                  className="btn-download"
+                  onClick={() => handleDownload(file)}
+                >
                   下载
                 </button>
               </div>
