@@ -8,7 +8,12 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import pino from 'pino';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import config from './config/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { createToolRegistry } from './tools/registry.js';
 import { createVisionAgent } from './agents/vision-agent.js';
 import { createDesignAgent } from './agents/design-agent.js';
@@ -61,6 +66,12 @@ async function main() {
   const app = express();
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
+
+  // 服务静态文件（生产环境）
+  if (config.NODE_ENV === 'production') {
+    const webDistPath = path.join(__dirname, '../../web/dist');
+    app.use(express.static(webDistPath));
+  }
 
   // 健康检查
   app.get('/health', (req, res) => {
@@ -129,6 +140,13 @@ async function main() {
       },
     });
   });
+
+  // 前端路由（生产环境）
+  if (config.NODE_ENV === 'production') {
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(__dirname, '../../web/dist/index.html'));
+    });
+  }
 
   // 创建 HTTP 服务器
   const httpServer = createServer(app);

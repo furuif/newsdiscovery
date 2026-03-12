@@ -1,0 +1,27 @@
+.image-preview-section {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.image-preview-section h2 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 1.8rem;
+}
+
+.image-preview {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
