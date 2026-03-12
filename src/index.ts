@@ -13,6 +13,7 @@ import { createToolRegistry } from './tools/registry.js';
 import { createVisionAgent } from './agents/vision-agent.js';
 import { createDesignAgent } from './agents/design-agent.js';
 import { createValidationAgent } from './agents/validation-agent.js';
+import { createGeneratorAgent } from './agents/generator-agent.js';
 import { createOrchestratorAgent } from './agents/orchestrator.js';
 
 const logger = pino({
@@ -47,6 +48,10 @@ async function main() {
   const validationAgent = createValidationAgent(toolExecutor);
   agents.set(validationAgent.id, validationAgent);
   logger.info(`✅ Validation Agent 就绪`);
+
+  const generatorAgent = createGeneratorAgent(toolExecutor);
+  agents.set(generatorAgent.id, generatorAgent);
+  logger.info(`✅ Generator Agent 就绪`);
 
   const orchestrator = createOrchestratorAgent(toolExecutor, agents);
   agents.set(orchestrator.id, orchestrator);

@@ -268,6 +268,246 @@ export function createBloksPartsDatabase(): PartDatabase {
     },
   });
 
+  // ==================== 轮子系列 ====================
+  
+  // 小轮子 (直径 30mm)
+  parts.push({
+    id: 'bloks_wheel_small',
+    name: '小轮子 30mm',
+    category: 'special',
+    dimensions: {
+      width: 30,
+      height: 20,
+      depth: 30,
+      unit: 'mm',
+    },
+    studs: {
+      top: null,
+      bottom: null,
+    },
+    tubes: {
+      count: 1,
+      diameter: 5,
+      positions: [[0, 0, 0]],
+    },
+    weight: 3.5,
+    material: 'ABS',
+    colors: ['#000000', '#FF0000', '#0066CC'],
+    printSettings: {
+      layerHeight: 0.15,
+      infill: 30,
+      support: false,
+    },
+  });
+
+  // 大轮子 (直径 50mm)
+  parts.push({
+    id: 'bloks_wheel_large',
+    name: '大轮子 50mm',
+    category: 'special',
+    dimensions: {
+      width: 50,
+      height: 30,
+      depth: 50,
+      unit: 'mm',
+    },
+    studs: {
+      top: null,
+      bottom: null,
+    },
+    tubes: {
+      count: 1,
+      diameter: 5,
+      positions: [[0, 0, 0]],
+    },
+    weight: 8.2,
+    material: 'ABS',
+    colors: ['#000000', '#FF0000'],
+    printSettings: {
+      layerHeight: 0.15,
+      infill: 25,
+      support: false,
+    },
+  });
+
+  // ==================== 门窗系列 ====================
+  
+  // 窗户框 2x4
+  parts.push({
+    id: 'bloks_window_2x4',
+    name: '窗户框 2x4',
+    category: 'special',
+    dimensions: {
+      width: 16,
+      height: 24,
+      depth: 16,
+      unit: 'mm',
+    },
+    studs: {
+      top: {
+        rows: 2,
+        cols: 2,
+        diameter: 4.8,
+      },
+      bottom: null,
+    },
+    weight: 3.2,
+    material: 'ABS',
+    colors: ['#FFFFFF', '#0066CC', '#FFCC00'],
+    printSettings: {
+      layerHeight: 0.2,
+      infill: 15,
+      support: true,
+    },
+  });
+
+  // 门框 2x6
+  parts.push({
+    id: 'bloks_door_2x6',
+    name: '门框 2x6',
+    category: 'special',
+    dimensions: {
+      width: 16,
+      height: 40,
+      depth: 16,
+      unit: 'mm',
+    },
+    studs: {
+      top: {
+        rows: 2,
+        cols: 2,
+        diameter: 4.8,
+      },
+      bottom: null,
+    },
+    weight: 5.5,
+    material: 'ABS',
+    colors: ['#FFFFFF', '#8B4513', '#0066CC'],
+    printSettings: {
+      layerHeight: 0.2,
+      infill: 15,
+      support: true,
+    },
+  });
+
+  // ==================== 连接件系列 ====================
+  
+  // 2 孔连接轴
+  parts.push({
+    id: 'bloks_axle_2',
+    name: '连接轴 2 孔',
+    category: 'connector',
+    dimensions: {
+      width: 16,
+      height: 8,
+      depth: 8,
+      unit: 'mm',
+    },
+    studs: {
+      top: null,
+      bottom: null,
+    },
+    tubes: {
+      count: 2,
+      diameter: 5,
+      positions: [[-4, 0, 0], [4, 0, 0]],
+    },
+    weight: 1.5,
+    material: 'ABS',
+    colors: ['#000000', '#FFFFFF'],
+    printSettings: {
+      layerHeight: 0.2,
+      infill: 40,
+      support: false,
+    },
+  });
+
+  // 4 孔连接轴
+  parts.push({
+    id: 'bloks_axle_4',
+    name: '连接轴 4 孔',
+    category: 'connector',
+    dimensions: {
+      width: 32,
+      height: 8,
+      depth: 8,
+      unit: 'mm',
+    },
+    studs: {
+      top: null,
+      bottom: null,
+    },
+    tubes: {
+      count: 4,
+      diameter: 5,
+      positions: [[-12, 0, 0], [-4, 0, 0], [4, 0, 0], [12, 0, 0]],
+    },
+    weight: 2.8,
+    material: 'ABS',
+    colors: ['#000000', '#FFFFFF'],
+    printSettings: {
+      layerHeight: 0.2,
+      infill: 40,
+      support: false,
+    },
+  });
+
+  // ==================== 装饰件系列 ====================
+  
+  // 1x1 圆形光面砖
+  parts.push({
+    id: 'bloks_tile_1x1_round',
+    name: '1x1 圆形光面砖',
+    category: 'decoration',
+    dimensions: {
+      width: 8,
+      height: 3.2,
+      depth: 8,
+      unit: 'mm',
+    },
+    studs: {
+      top: null,
+      bottom: null,
+    },
+    weight: 0.4,
+    material: 'ABS',
+    colors: ['#FF0000', '#0066CC', '#FFCC00', '#FFFFFF', '#000000', '#FF6600'],
+    printSettings: {
+      layerHeight: 0.1,
+      infill: 20,
+      support: false,
+    },
+  });
+
+  // 2x2 标志牌
+  parts.push({
+    id: 'bloks_sign_2x2',
+    name: '2x2 标志牌',
+    category: 'decoration',
+    dimensions: {
+      width: 16,
+      height: 3.2,
+      depth: 16,
+      unit: 'mm',
+    },
+    studs: {
+      top: null,
+      bottom: {
+        rows: 2,
+        cols: 2,
+        diameter: 4.8,
+      },
+    },
+    weight: 0.8,
+    material: 'ABS',
+    colors: ['#FFFFFF', '#FF0000', '#0066CC'],
+    printSettings: {
+      layerHeight: 0.15,
+      infill: 20,
+      support: false,
+    },
+  });
+
   return {
     getPartById(id: string): Part | null {
       return parts.find(p => p.id === id) || null;
