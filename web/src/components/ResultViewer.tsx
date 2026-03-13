@@ -12,16 +12,22 @@ function ResultViewer() {
 
   const handleDownload = async (file: any) => {
     try {
-      const response = await fetch(file.path);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // 从 file.path 提取 fileId（最后一段路径）
+      const fileId = file.path.split('/').pop()?.split('/').pop() || file.path;
+      const sessionId = file.sessionId || 'session_unknown';
+      
+      // 调用后端下载 API
+      const downloadUrl = `/api/session/${sessionId}/download/${encodeURIComponent(fileId)}?format=${file.format || 'stl'}`;
+      
+      // 创建临时链接触发下载
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `model_${Date.now()}.${file.format}`;
+      a.href = downloadUrl;
+      a.download = `model_${Date.now()}.${file.format || 'stl'}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      
+      console.log('下载开始:', downloadUrl);
     } catch (error) {
       console.error('Download failed:', error);
       alert('下载失败：' + (error instanceof Error ? error.message : '未知错误'));

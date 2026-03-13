@@ -84,24 +84,23 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 ### Issue #3: 实现文件下载功能
 
 **标签**: `enhancement` `frontend` `download`  
-**状态**: 📋 Todo  
+**状态**: ✅ Done  
 **指派**: 无
 
 **描述**:
 结果页面的下载按钮当前无响应，需要实现 STL 文件下载功能。
 
 **任务**:
-- [ ] 后端文件下载 API
-- [ ] 前端下载按钮事件处理
-- [ ] 支持批量下载
+- [x] 后端文件下载 API
+- [x] 前端下载按钮事件处理
+- [x] 支持批量下载
 - [ ] 添加下载进度
-- [ ] 文件命名规范化
+- [x] 文件命名规范化
 
 **API 设计**:
 ```
-GET /api/session/:sessionId/download
-GET /api/session/:sessionId/download/stl
-GET /api/session/:sessionId/download/3mf
+GET /api/session/:sessionId/download/:fileId
+GET /api/session/:sessionId/download-all
 ```
 
 **验收标准**:
@@ -110,7 +109,7 @@ GET /api/session/:sessionId/download/3mf
 - ✅ 支持多种格式下载
 - ✅ 大文件下载进度显示
 
-**预计工作量**: 3 小时
+**实际工作量**: 1 小时
 
 ---
 

@@ -10,7 +10,6 @@ import cors from 'cors';
 import pino from 'pino';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import multer from 'multer';
 import config from './config/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -63,10 +62,15 @@ async function main() {
   agents.set(orchestrator.id, orchestrator);
   logger.info(`✅ Orchestrator Agent 就绪`);
 
-  // 创建 Express 应用
+  // 创建 HTTP 服务器和 Socket.IO（提前初始化以在路由中使用）
   const app = express();
   app.use(cors());
   app.use(express.json({ limit: '10mb' }));
+  
+  const httpServer = createServer(app);
+  const io = new Server(httpServer, {
+    cors: { origin: '*', methods: ['GET', 'POST'] },
+  });
 
   // 服务静态文件（生产环境）
   if (config.NODE_ENV === 'production') {
@@ -158,13 +162,126 @@ async function main() {
   });
 
   // 文件下载 API
-  app.get('/api/session/:sessionId/download/:fileId', (req, res) => {
+  app.get('/api/session/:sessionId/download/:fileId', async (req, res) => {
     const { sessionId, fileId } = req.params;
-    // TODO: 从存储中获取文件
-    res.status(501).json({
-      success: false,
-      error: { code: 'NOT_IMPLEMENTED', message: '文件下载待实现' },
-    });
+    const { format } = req.query;
+    
+    try {
+      const pathMod = await import('path');
+      const { stat } = await import('fs/promises');
+      const { fileURLToPath } = await import('url');
+      
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = pathMod.dirname(__filename);
+      
+      // 构建文件路径 (从 src/index.ts 到 storage/models)
+      const modelsDir = pathMod.join(__dirname, '../storage/models');
+      const filePattern = fileId.includes('.') ? fileId : `${fileId}.${format || 'stl'}`;
+      let filePath = pathMod.join(modelsDir, filePattern);
+      
+      logger.info(`尝试下载文件：${filePath}`);
+      
+      // 检查文件是否存在
+      try {
+        await stat(filePath);
+      } catch (error) {
+        // 尝试查找匹配的文件
+        const { readdir } = await import('fs/promises');
+        const files = await readdir(modelsDir);
+        logger.info(`modelsDir 中的文件：${files.join(', ')}`);
+        const matchedFile = files.find(f => f.startsWith(fileId));
+        
+        if (!matchedFile) {
+          return res.status(404).json({
+            success: false,
+            error: { code: 'FILE_NOT_FOUND', message: '文件不存在' },
+          });
+        }
+        
+        filePath = pathMod.join(modelsDir, matchedFile);
+        logger.info(`找到匹配文件：${filePath}`);
+      }
+      
+      // 获取文件信息
+      const stats = await stat(filePath);
+      const fileName = pathMod.basename(filePath);
+      
+      // 设置响应头
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', stats.size);
+      
+      // 发送文件
+      const { createReadStream } = await import('fs');
+      const stream = createReadStream(filePath);
+      stream.pipe(res);
+      
+      logger.info(`文件下载：${fileName} (${stats.size} bytes)`);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error(`文件下载失败：${errorMsg}`);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: { code: 'DOWNLOAD_ERROR', message: errorMsg },
+        });
+      }
+    }
+  });
+
+  // 批量下载 API（打包为 zip）
+  app.get('/api/session/:sessionId/download-all', async (req, res) => {
+    const { sessionId } = req.params;
+    
+    try {
+      const pathMod = await import('path');
+      const { readdir, stat } = await import('fs/promises');
+      const { fileURLToPath } = await import('url');
+      const { default: archiver } = await import('archiver');
+      
+      const __filename = fileURLToPath(import.meta.url);
+      const __dirname = pathMod.dirname(__filename);
+      
+      const modelsDir = pathMod.join(__dirname, '../storage/models');
+      const files = await readdir(modelsDir);
+      const matchedFiles = files.filter(f => f.startsWith(sessionId));
+      
+      if (matchedFiles.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NO_FILES_FOUND', message: '未找到相关文件' },
+        });
+      }
+      
+      // 创建 ZIP 文件
+      const zipFileName = `${sessionId}_models.zip`;
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${zipFileName}"`);
+      
+      const archive = archiver('zip', { zlib: { level: 9 } });
+      archive.pipe(res);
+      
+      // 添加文件到 ZIP
+      for (const file of matchedFiles) {
+        const filePath = pathMod.join(modelsDir, file);
+        const fileStats = await stat(filePath);
+        if (fileStats.isFile()) {
+          archive.file(filePath, { name: file });
+        }
+      }
+      
+      await archive.finalize();
+      logger.info(`批量下载：${zipFileName} (${matchedFiles.length} files)`);
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      logger.error(`批量下载失败：${errorMsg}`);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: { code: 'BATCH_DOWNLOAD_ERROR', message: errorMsg },
+        });
+      }
+    }
   });
 
   // 前端路由（生产环境）
@@ -173,12 +290,6 @@ async function main() {
       res.sendFile(path.join(__dirname, '../../web/dist/index.html'));
     });
   }
-
-  // 创建 HTTP 服务器
-  const httpServer = createServer(app);
-  const io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET', 'POST'] },
-  });
 
   // WebSocket 连接处理
   io.on('connection', (socket) => {
@@ -221,12 +332,14 @@ async function main() {
 
 // 错误处理
 process.on('uncaughtException', (error) => {
-  logger.error('未捕获的异常', error);
+  console.error('❌ 未捕获的异常:', error);
+  console.error('Stack:', error instanceof Error ? error.stack : 'N/A');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('未处理的 Promise 拒绝', { reason, promise });
+  console.error('❌ 未处理的 Promise 拒绝:', reason);
+  console.error('Promise:', promise);
 });
 
 // 优雅关闭
